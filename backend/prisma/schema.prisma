@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(RESIDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  roomId    String?
+  room      Room?    @relation(fields: [roomId], references: [id])
+
+  @@index([deletedAt])
+  logs      AuditLog[]
+  maintenanceRequests MaintenanceRequest[]
+}
+
+model Room {
+  id          String   @id @default(uuid())
+  roomNumber  String   @unique
+  capacity    Int
+  status      RoomStatus @default(AVAILABLE)
+  createdAt   DateTime @default(now())
+  deletedAt    DateTime?
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  bills       Bill[]
+  requests    MaintenanceRequest[]
+  currentOccupancy Int @default(0)
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model Bill {
+  id        String   @id @default(uuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id])
+
+  amount    Float
+  type      BillType
+  paymentMethod PaymentMethod?
+  paidAt DateTime?
+  status    BillStatus @default(UNPAID)
+  dueDate   DateTime
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+  updatedAt DateTime @updatedAt
+
+  @@unique([roomId, type, dueDate])
+  @@index([status])
+  @@index([roomId])
+  @@index([deletedAt])
+}
+
+model MaintenanceRequest {
+  id          String   @id @default(uuid())
+  roomId      String
+  room        Room     @relation(fields: [roomId], references: [id])
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  description String
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime @default(now())
+  deletedAt DateTime?
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  oldData Json?
+  newData Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  RESIDENT
+}
+
+enum RoomStatus {
+  AVAILABLE
+  FULL
+  MAINTENANCE
+}
+
+enum BillStatus {
+  PAID
+  UNPAID
+}
+
+enum BillType {
+  ELECTRIC
+  WATER
+  RENT
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  DONE
+}
+
+enum PaymentMethod {
+  CASH
+  VNPAY
+}
