@@ -6,13 +6,24 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'admin@gmail.com' },
-    update: {},
+    update: {
+      name: 'Admin 1',
+      role: 'ADMIN',
+    },
     create: {
       email: 'admin@gmail.com',
+      name: 'Admin 1',
       password: hashedPassword,
       role: 'ADMIN'
     }
   });
 }
 
-main();
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

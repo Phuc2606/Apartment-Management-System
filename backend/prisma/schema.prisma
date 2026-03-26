@@ -16,14 +16,17 @@ model User {
   email     String   @unique
   password  String
   role      Role     @default(RESIDENT)
+  avatar      String?
+  name      String?        // tên đầy đủ
+  gender    Gender?
+  dateOfBirth DateTime?    // ngày sinh
+  cccd      String?        // số CCCD / CMND
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
-
+  
   roomId    String?
   room      Room?    @relation(fields: [roomId], references: [id])
-
-  @@index([deletedAt])
   logs      AuditLog[]
   maintenanceRequests MaintenanceRequest[]
 }
@@ -130,4 +133,9 @@ enum RequestStatus {
 enum PaymentMethod {
   CASH
   VNPAY
+}
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }
