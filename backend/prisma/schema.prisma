@@ -29,6 +29,8 @@ model User {
   room          Room?    @relation(fields: [roomId], references: [id])
   logs          AuditLog[]
   maintenanceRequests MaintenanceRequest[]
+
+  passwordResetTokens PasswordResetToken[]
 }
 
 model PasswordResetToken {
