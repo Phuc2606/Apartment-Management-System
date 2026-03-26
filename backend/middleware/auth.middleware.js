@@ -13,7 +13,10 @@ export const authMiddleware = (req, res, next) => {
             return res.status(500).json({ message: 'Server configuration error' });
         }
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
+        req.user = {
+            id: decoded.userId,
+            role: decoded.role
+        };
         next();
     } catch (err) {
         if (err.name === 'TokenExpiredError') {
