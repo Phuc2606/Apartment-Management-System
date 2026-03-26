@@ -12,56 +12,105 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      Role     @default(RESIDENT)
-  avatar      String?
-  name      String?        // tên đầy đủ
-  gender    Gender?
-  dateOfBirth DateTime?    // ngày sinh
-  cccd      String?        // số CCCD / CMND
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-  
-  roomId    String?
-  room      Room?    @relation(fields: [roomId], references: [id])
-  logs      AuditLog[]
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  role          Role     @default(RESIDENT)
+  avatar        String?
+  name          String?
+  gender        Gender?
+  dateOfBirth   DateTime?
+  cccd          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  roomId        String?
+  room          Room?    @relation(fields: [roomId], references: [id])
+  logs          AuditLog[]
   maintenanceRequests MaintenanceRequest[]
 }
 
-model Room {
-  id          String   @id @default(uuid())
-  roomNumber  String   @unique
-  capacity    Int
-  status      RoomStatus @default(AVAILABLE)
-  createdAt   DateTime @default(now())
-  deletedAt    DateTime?
-  updatedAt DateTime @updatedAt
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
-  users       User[]
-  bills       Bill[]
-  requests    MaintenanceRequest[]
-  currentOccupancy Int @default(0)
+  @@index([token])
+  @@index([userId])
+}
+
+model RoomEquipment {
+  id          String          @id @default(uuid())
+  roomId      String
+  room        Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  name        String
+  quantity    Int             @default(1)
+  status      EquipmentStatus @default(GOOD)
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([roomId])
   @@index([status])
+}
+
+model MaintenanceHistory {
+  id                   String   @id @default(uuid())
+  roomId               String
+  room                 Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  maintenanceRequestId String?
+  maintenanceRequest   MaintenanceRequest? @relation(fields: [maintenanceRequestId], references: [id])
+  description          String
+  cost                 Float?
+  performedBy          String? 
+  performedAt          DateTime @default(now())
+
+  @@index([roomId])
+  @@index([performedAt])
+  @@index([maintenanceRequestId])
+}
+
+model Room {
+  id                String   @id @default(uuid())
+  roomNumber        String   @unique
+  floor             Int     
+  capacity          Int
+  status            RoomStatus @default(AVAILABLE)
+  createdAt         DateTime @default(now())
+  deletedAt         DateTime?
+  updatedAt         DateTime @updatedAt
+
+  users             User[]
+  bills             Bill[]
+  requests          MaintenanceRequest[]
+  equipments        RoomEquipment[]
+  maintenanceHistories MaintenanceHistory[]
+
+  currentOccupancy  Int      @default(0)
+
+  @@index([status])
+  @@index([floor])         
   @@index([deletedAt])
+  @@index([floor, status])
 }
 
 model Bill {
-  id        String   @id @default(uuid())
-  roomId    String
-  room      Room     @relation(fields: [roomId], references: [id])
-
-  amount    Float
-  type      BillType
+  id            String      @id @default(uuid())
+  roomId        String
+  room          Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  amount        Float
+  type          BillType
   paymentMethod PaymentMethod?
-  paidAt DateTime?
-  status    BillStatus @default(UNPAID)
-  dueDate   DateTime
-  createdAt DateTime @default(now())
-  deletedAt DateTime?
-  updatedAt DateTime @updatedAt
+  paidAt        DateTime?
+  status        BillStatus  @default(UNPAID)
+  dueDate       DateTime
+  createdAt     DateTime    @default(now())
+  deletedAt     DateTime?
+  updatedAt     DateTime    @updatedAt
 
   @@unique([roomId, type, dueDate])
   @@index([status])
@@ -70,18 +119,18 @@ model Bill {
 }
 
 model MaintenanceRequest {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   roomId      String
-  room        Room     @relation(fields: [roomId], references: [id])
-
-  userId String
-  user   User @relation(fields: [userId], references: [id])
-
+  room        Room           @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
   description String
-  status      RequestStatus @default(PENDING)
-  createdAt   DateTime @default(now())
-  deletedAt DateTime?
-  updatedAt DateTime @updatedAt
+  status      RequestStatus  @default(PENDING)
+  createdAt   DateTime       @default(now())
+  deletedAt   DateTime?
+  updatedAt   DateTime       @updatedAt
+
+  histories   MaintenanceHistory[]
 
   @@index([roomId])
   @@index([status])
@@ -92,9 +141,8 @@ model AuditLog {
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-
-  oldData Json?
-  newData Json?
+  oldData   Json?
+  newData   Json?
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -134,8 +182,16 @@ enum PaymentMethod {
   CASH
   VNPAY
 }
+
 enum Gender {
   MALE
   FEMALE
   OTHER
+}
+
+enum EquipmentStatus {
+  GOOD
+  BROKEN
+  REPAIRING
+  OUT_OF_SERVICE
 }
