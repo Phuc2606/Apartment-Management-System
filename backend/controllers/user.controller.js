@@ -1,4 +1,4 @@
-import * as userService from '../services/user.service.js';
+import * as userService from "../services/user.service.js";
 
 export const getMe = async (req, res) => {
   try {
@@ -11,8 +11,12 @@ export const getMe = async (req, res) => {
 
 export const updateMe = async (req, res) => {
   try {
-    const updated = await userService.updateProfile(req.user.id, req.body);
-    res.json({ user: updated });
+    const updatedUser = await userService.updateProfile(
+      req.user.id, 
+      req.body, 
+      req.file
+    );
+    res.json({ message: "Cập nhật thành công", user: updatedUser });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
