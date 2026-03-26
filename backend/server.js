@@ -1,31 +1,28 @@
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg'; 
-import { Pool } from 'pg';              
 import express from 'express';
 import dotenv from 'dotenv';
+import authRoutes from './routes/auth.route.js'
 
 dotenv.config();
-const app = express();
 
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Create connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,  
+// middleware global
+app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.send('API is running...');
 });
 
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({
-  adapter,                                   
+// routes
+app.use('/api', authRoutes);
+
+// handle 404 NOT FOUND
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
 });
 
-app.get('/', async (req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
-});
-
+// start server
 app.listen(PORT, () => {
-  console.log(`Backend server is running on port ${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-export { prisma };
